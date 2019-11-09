@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 The international mutual fund I chose was FIVFX(Fidelity International Capital Appreciation Fund), whose 3 largest net assets is at USA, UK and France, mainly focus on stocks, and top 3 market sector of stocks are industrials, information technology and financials.
 
-Thus, I chose indices: S&P500(^GSPC), ETF: MSCI Emerging Markets(EEM), Vanguard S&P500(VOO), JPMorgan Emergin Markets Equity Fund Class A(JFAMX). 
+Thus, I chose indices: S&P500(^GSPC),NASDAQ Composite(^IXIC),  ETF: MSCI Emerging Markets(EEM), VanEck Vectors Morningstar Wide Moat ETF(MOAT), JPMorgan Emergin Markets Equity Fund Class A(JFAMX).
 
 ## Import dataset(selected fund the indices data from )
 
@@ -29,16 +29,19 @@ EEM <- read.csv("EEM.csv",header = TRUE, sep = ",")
 JFAMX <- read.csv("JFAMX.csv",header = TRUE, sep = ",")
 MOAT <- read.csv("MOAT.csv",header = TRUE, sep = ",")
 GSPC <- read.csv("^GSPC-2.csv",header = TRUE, sep = ",")
+IXIC <- read.csv("^IXIC.csv", header=TRUE, sep=",")
+
 ```
 
 # Formalize date from factor to date
 
 ```{r}
-data$Date<- as.Date(data$Date, "%Y-%m-%d")
-EEM$Date<- as.Date(EEM$Date, "%Y-%m-%d")
-JFAMX$Date<- as.Date(JFAMX$Date, "%Y-%m-%d")
-MOAT$Date<- as.Date(MOAT$Date, "%Y-%m-%d")
-GSPC$Date<- as.Date(GSPC$Date, "%Y-%m-%d")
+data$Date <- as.Date(data$Date, "%Y-%m-%d")
+EEM$Date <- as.Date(EEM$Date, "%Y-%m-%d")
+JFAMX$Date <- as.Date(JFAMX$Date, "%Y-%m-%d")
+MOAT$Date <- as.Date(MOAT$Date, "%Y-%m-%d")
+GSPC$Date <- as.Date(GSPC$Date, "%Y-%m-%d")
+IXIC$Date <- as.Date(IXIC$Date, "%Y-%m-%d")
 ```
 
 # Choose variables we need(Date and Close price daily)
@@ -50,7 +53,7 @@ EEM %<>% select(Date, Close) %>% rename(EEM=Close)
 JFAMX %<>% select(Date, Close) %>% rename(JFAMX=Close) 
 MOAT %<>% select(Date, Close) %>% rename(MOAT=Close) 
 GSPC %<>% select(Date, Close) %>% rename(GSPC=Close) 
-
+IXIC %<>% select(Date, Close) %>% rename(IXIC=Close) 
 ```
 
 # Merge indices and fund data into one table with same time line
@@ -60,6 +63,7 @@ com <- merge(data, JFAMX, by="Date")
 com <- merge(com, EEM, by= "Date")
 com <- merge(com, MOAT, by="Date")
 com <- merge(com, GSPC, by="Date")
+com <- merge(com, IXIC, by="Date")
 com$Date <- as.Date(com$Date, format='%Y-%m-%d')
 ```
 
@@ -70,7 +74,7 @@ ggplot(com) +
   geom_line(aes(x=Date, y=(com$EEM)), color = "brown") +
   geom_line(aes(x=Date, y=(com$FIVFX)), color = "red") +
   geom_line(aes(x=Date, y=(com$JFAMX)), color = "purple") +
-  geom_line(aes(x=Date, y=(com$MOAT)), color = "black") +
+  geom_line(aes(x=Date, y=(com$MOAT)), color = "black") 
   labs(title = "Daily Close Price for FIVFX and indices", x="Time(daily)", y="Close Price")
 ```
 
@@ -84,7 +88,8 @@ FIVFX_r <- diff(log(com$FIVFX), differences = 1)
 JFAMX_r <- diff(log(com$JFAMX), differences = 1)
 MOAT_r <- diff(log(com$MOAT), differences = 1)
 GSPC_r <- diff(log(com$GSPC), differences = 1)
-log <- data.frame(cbind(FIVFX_r, EEM_r, MOAT_r, JFAMX_r, GSPC_r))
+IXIC_r <- diff(log(com$IXIC), differences = 1)
+log <- data.frame(cbind(FIVFX_r, EEM_r, MOAT_r, JFAMX_r, GSPC_r, IXIC_r))
 log <- cbind(com$Date[2:length(com$Date)], log)
 names(log)[1] <- "Date"
 ```
@@ -98,6 +103,7 @@ ggplot(com)+
   geom_line(aes(x=Date, y=1000*(JFAMX/com$JFAMX[1]), color = "purple"))+
   geom_line(aes(x=Date, y=1000*(MOAT/com$MOAT[1]), color = "green")) +
   geom_line(aes(x=Date, y=1000*(GSPC/com$GSPC[1]), color = "yellow")) +
+  geom_line(aes(x=Date, y=1000*(IXIC/com$IXIC[1]), color = "blue"))
   labs(title = "Daily log return in FIVFX and indices", x="Time(daily)", y="Daily log return")
   
 ```
@@ -105,6 +111,6 @@ ggplot(com)+
 # Model linear regression
 
 ```{r}
-fit <- lm(FIVFX_r ~ EEM_r + JFAMX_r + MOAT_r + GSPC_r, log)
+fit <- lm(FIVFX_r ~ EEM_r + JFAMX_r + MOAT_r + GSPC_r + IXIC_r, log)
 summary(fit)
 ```
