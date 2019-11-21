@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 The international mutual fund I chose was FIVFX(Fidelity International Capital Appreciation Fund), whose 3 largest net assets is at USA, UK and France, mainly focus on stocks, and top 3 market sector of stocks are industrials, information technology and financials.
 
-Thus, I chose indices: S&P500(^GSPC),NASDAQ Composite(^IXIC),  ETF: MSCI Emerging Markets(EEM), VanEck Vectors Morningstar Wide Moat ETF(MOAT), JPMorgan Emergin Markets Equity Fund Class A(JFAMX).
+Thus, I chose indices: S&P500(^GSPC),NASDAQ Composite(^IXIC),  ETF: MSCI Emerging Markets(EEM), VanEck Vectors Morningstar Wide Moat ETF(MOAT), JPMorgan Emergin Markets Equity Fund Class A(JFAMX). Benchmark: MSCI_EAFE, MSCIUSA
 
 ## Import dataset(selected fund the indices data from )
 
@@ -23,6 +23,7 @@ library(dplyr)
 library(tidyr)
 library(magrittr)
 library(ggplot2)
+library(plotly)
 
 data <-read.csv("FIVFX-4.csv",header = TRUE, sep = ",")
 EEM <- read.csv("EEM.csv",header = TRUE, sep = ",")
@@ -30,7 +31,8 @@ JFAMX <- read.csv("JFAMX.csv",header = TRUE, sep = ",")
 MOAT <- read.csv("MOAT.csv",header = TRUE, sep = ",")
 GSPC <- read.csv("^GSPC-2.csv",header = TRUE, sep = ",")
 IXIC <- read.csv("^IXIC.csv", header=TRUE, sep=",")
-
+EAFE <- readxl::read_excel("MSCI_EAFE_Index.xls")
+MSCIUSA <- readxl::read_excel("MSCIUSA.xls")
 ```
 
 # Formalize date from factor to date
@@ -42,18 +44,21 @@ JFAMX$Date <- as.Date(JFAMX$Date, "%Y-%m-%d")
 MOAT$Date <- as.Date(MOAT$Date, "%Y-%m-%d")
 GSPC$Date <- as.Date(GSPC$Date, "%Y-%m-%d")
 IXIC$Date <- as.Date(IXIC$Date, "%Y-%m-%d")
+EAFE$Date <- as.Date(EAFE$Date, "%Y-%m-%d")
+MSCIUSA$Date <- as.Date(MSCIUSA$Date,"%Y-%m-%d")
 ```
 
 # Choose variables we need(Date and Close price daily)
 
 ```{r pressure, echo=FALSE}
-
 data %<>% select(Date, Close) %>% rename(FIVFX=Close) 
 EEM %<>% select(Date, Close) %>% rename(EEM=Close)
 JFAMX %<>% select(Date, Close) %>% rename(JFAMX=Close) 
 MOAT %<>% select(Date, Close) %>% rename(MOAT=Close) 
 GSPC %<>% select(Date, Close) %>% rename(GSPC=Close) 
 IXIC %<>% select(Date, Close) %>% rename(IXIC=Close) 
+EAFE %<>% select(Date, Close) %>% rename(EAFE=Close)
+MSCIUSA %<>% select(Date, Close) %>% rename(MSCIUSA=Close)
 ```
 
 # Merge indices and fund data into one table with same time line
@@ -64,6 +69,8 @@ com <- merge(com, EEM, by= "Date")
 com <- merge(com, MOAT, by="Date")
 com <- merge(com, GSPC, by="Date")
 com <- merge(com, IXIC, by="Date")
+com <- merge(com, EAFE, by="Date")
+com <- merge(com, MSCIUSA, by="Date")
 com$Date <- as.Date(com$Date, format='%Y-%m-%d')
 ```
 
@@ -74,7 +81,9 @@ ggplot(com) +
   geom_line(aes(x=Date, y=(com$EEM)), color = "brown") +
   geom_line(aes(x=Date, y=(com$FIVFX)), color = "red") +
   geom_line(aes(x=Date, y=(com$JFAMX)), color = "purple") +
-  geom_line(aes(x=Date, y=(com$MOAT)), color = "black") 
+  geom_line(aes(x=Date, y=(com$MOAT)), color = "black") +
+  geom_line(aes(x=Date, y=(com$EAFE)), color = "orange") +
+  geom_line(aes(x=Date, y=(com$MSCIUSA)), color = "gray") +
   labs(title = "Daily Close Price for FIVFX and indices", x="Time(daily)", y="Close Price")
 ```
 
@@ -89,7 +98,9 @@ JFAMX_r <- diff(log(com$JFAMX), differences = 1)
 MOAT_r <- diff(log(com$MOAT), differences = 1)
 GSPC_r <- diff(log(com$GSPC), differences = 1)
 IXIC_r <- diff(log(com$IXIC), differences = 1)
-log <- data.frame(cbind(FIVFX_r, EEM_r, MOAT_r, JFAMX_r, GSPC_r, IXIC_r))
+EAFE_r <- diff(log(com$EAFE), differences =  1)
+MSCIUSA_r <- diff(log(com$MSCIUSA), differences = 1)
+log <- data.frame(cbind(FIVFX_r, EEM_r, MOAT_r, JFAMX_r, GSPC_r, IXIC_r, EAFE_r, MSCIUSA_r))
 log <- cbind(com$Date[2:length(com$Date)], log)
 names(log)[1] <- "Date"
 ```
@@ -103,14 +114,70 @@ ggplot(com)+
   geom_line(aes(x=Date, y=1000*(JFAMX/com$JFAMX[1]), color = "purple"))+
   geom_line(aes(x=Date, y=1000*(MOAT/com$MOAT[1]), color = "green")) +
   geom_line(aes(x=Date, y=1000*(GSPC/com$GSPC[1]), color = "yellow")) +
-  geom_line(aes(x=Date, y=1000*(IXIC/com$IXIC[1]), color = "blue"))
+  geom_line(aes(x=Date, y=1000*(IXIC/com$IXIC[1]), color = "gray")) +
+  geom_line(aes(x=Date, y=1000*(EAFE/com$EAFE[1]), color = "red")) +
+  geom_line(aes(x=Date, y=1000*(MSCIUSA/com$MSCIUSA[1]), color = "orange")) +
   labs(title = "Daily log return in FIVFX and indices", x="Time(daily)", y="Daily log return")
   
 ```
 
+Correlation graph:
+```{r}
+COR <- cor(com[-c(1,2)]) #WHY ????
+corrplot::corrplot(COR, type = "upper", order = "hclust", tl.col = "orange", tl.srt = 45)
+pairs(~MSCIUSA + EEM + JFAMX + MOAT + GSPC + IXIC + EAFE, com)
+car::scatterplotMatrix(~MSCIUSA + EEM + JFAMX + MOAT + GSPC + IXIC + EAFE, com)
+car::scatterplotMatrix(~MSCIUSA + EEM + JFAMX + MOAT + GSPC + IXIC + EAFE, diagonal=F, smooth=F, data)  #ERROR ??
+```
+
+
 # Model linear regression
 
 ```{r}
-fit <- lm(FIVFX_r ~ EEM_r + JFAMX_r + MOAT_r + GSPC_r + IXIC_r, log)
-summary(fit)
+#Benchmarks: 
+fit2 <- lm(FIVFX_r ~ EAFE_r-1, log)
+summary(fit2) #R^2: 0.4776
+
+fit3 <- lm(FIVFX_r ~ MSCIUSA_r-1, log)
+summary(fit3) #R^2: 0.527
+
+fit4 <- lm(FIVFX_r ~ EAFE_r-1 + MSCIUSA_r-1, log)
+summary(fit4) #R^2: 0.5365
+#Selected indices:
+fit5 <- lm(FIVFX_r ~ JFAMX_r-1, log)
+summary(fit5) #R^2: 0.6979
+
+fit6 <- lm(FIVFX_r ~ MOAT_r-1, log)
+summary(fit6) #R^2: 0.516
+
+fit7 <- lm(FIVFX_r ~ GSPC_r-1, log)
+summary(fit7) #R^2: 0.6668
+
+fit8 <- lm(FIVFX_r ~ IXIC_r-1, log)
+summary(fit8) #R^2: 0.6441
+#Combination of indices:
+fit <- lm(FIVFX_r ~ EEM_r-1 + JFAMX_r-1 + MOAT_r-1 + GSPC_r-1 + IXIC_r-1, log)
+summary(fit)  #R^2: 0.7876
+
+fit9 <- lm(FIVFX_r ~ EEM_r-1 + JFAMX_r-1 + MOAT_r-1 + GSPC_r-1 + IXIC_r-1 + EAFE_r-1, log)
+summary(fit9) #R^2: 0.8492
+
+fit10 <- lm(FIVFX_r ~ EEM_r-1 + JFAMX_r-1 + MOAT_r-1 + GSPC_r-1 + IXIC_r-1 + MSCIUSA_r-1, log)
+summary(fit10) #R^2: 0.8385
+
+fit1 <- lm(FIVFX_r ~ EEM_r-1 + JFAMX_r-1 + MOAT_r-1 + GSPC_r-1 + IXIC_r-1 + EAFE_r-1 + MSCIUSA_r-1, log)
+summary(fit1)  #R^2: 0.8572
 ```
+
+
+```{r}
+plot(fit1, which=c(1,2))
+
+
+```
+
+
+
+
+
+
