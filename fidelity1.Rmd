@@ -1,0 +1,309 @@
+---
+title: "fidelity"
+author: "Jingning Yang"
+date: "11/8/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The international mutual fund I chose was FIVFX(Fidelity International Capital Appreciation Fund), whose 3 largest net assets is at USA, UK and France, mainly focus on stocks, and top 3 market sector of stocks are industrials, information technology and financials.
+
+Thus, I chose indices: S&P500(^GSPC),NASDAQ Composite(^IXIC),  ETF: MSCI Emerging Markets(EEM), VanEck Vectors Morningstar Wide Moat ETF(MOAT), JPMorgan Emergin Markets Equity Fund Class A(JFAMX). Benchmark: MSCI_EAFE, MSCIUSA
+
+## Import dataset(selected fund the indices data from )
+
+```{r cars}
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(ggplot2)
+library(plotly)
+library(readr)
+
+data <-read.csv("FIVFX-4.csv",header = TRUE, sep = ",")
+EEM <- read.csv("EEM.csv",header = TRUE, sep = ",")
+JFAMX <- read.csv("JFAMX.csv",header = TRUE, sep = ",")
+MOAT <- read.csv("MOAT.csv",header = TRUE, sep = ",")
+GSPC <- read.csv("^GSPC-2.csv",header = TRUE, sep = ",")
+IXIC <- read.csv("^IXIC.csv", header=TRUE, sep=",")
+EAFE <- readxl::read_excel("MSCI_EAFE_Index.xls")
+MSCIUSA <- readxl::read_excel("MSCIUSA.xls")
+ASX200 <- read.csv("/Users/jingningyang/Fidelity-Fall2019/index/international_index/ASX 200.csv")
+CAC40 <- read.csv("/Users/jingningyang/Fidelity-Fall2019/index/international_index/CAC40.csv")
+FGIRX <- read.csv("/Users/jingningyang/Fidelity-Fall2019/index/international_index/FGIRX.csv")
+Hang <- read.csv("/Users/jingningyang/Fidelity-Fall2019/index/international_index/HANG SENG INDEX.csv")
+SP <- read.csv("/Users/jingningyang/Fidelity-Fall2019/index/international_index/S&P BSE SENSEX.csv")
+N225 <- read.csv("/Users/jingningyang/Fidelity-Fall2019/index/international_index/^N225.csv")
+
+```
+
+# Formalize date from factor to date
+
+```{r}
+data$Date <- as.Date(data$Date, "%Y-%m-%d")
+EEM$Date <- as.Date(EEM$Date, "%Y-%m-%d")
+JFAMX$Date <- as.Date(JFAMX$Date, "%Y-%m-%d")
+MOAT$Date <- as.Date(MOAT$Date, "%Y-%m-%d")
+GSPC$Date <- as.Date(GSPC$Date, "%Y-%m-%d")
+IXIC$Date <- as.Date(IXIC$Date, "%Y-%m-%d")
+EAFE$Date <- as.Date(EAFE$Date, "%Y-%m-%d")
+MSCIUSA$Date <- as.Date(MSCIUSA$Date,"%Y-%m-%d")
+ASX200$Date <- as.Date(ASX200$Date,"%Y-%m-%d")
+CAC40$Date <- as.Date(CAC40$Date,"%Y-%m-%d")
+FGIRX$Date <- as.Date(FGIRX$Date,"%Y-%m-%d")
+Hang$Date <- as.Date(Hang$Date,"%Y-%m-%d")
+SP$Date <- as.Date(SP$Date,"%Y-%m-%d")
+N225$Date <- as.Date(N225$Date,"%Y-%m-%d")
+```
+
+# Choose variables we need(Date and Close price daily)
+
+```{r pressure, echo=FALSE}
+data %<>% select(Date, Close) %>% rename(FIVFX=Close) 
+EEM %<>% select(Date, Close) %>% rename(EEM=Close)
+JFAMX %<>% select(Date, Close) %>% rename(JFAMX=Close) 
+MOAT %<>% select(Date, Close) %>% rename(MOAT=Close) 
+GSPC %<>% select(Date, Close) %>% rename(GSPC=Close) 
+IXIC %<>% select(Date, Close) %>% rename(IXIC=Close) 
+EAFE %<>% select(Date, Close) %>% rename(EAFE=Close)
+MSCIUSA %<>% select(Date, Close) %>% rename(MSCIUSA=Close)
+ASX200 %<>% select(Date, Close) %>% rename(ASX200=Close)
+CAC40 %<>% select(Date, Close) %>% rename(CAC40=Close)
+FGIRX %<>% select(Date, Close) %>% rename(FGIRX=Close)
+Hang %<>% select(Date, Close) %>% rename(Hang=Close)
+SP %<>% select(Date, Close) %>% rename(SP=Close)
+N225 %<>% select(Date, Close) %>% rename(N225=Close)
+```
+
+# Merge indices and fund data into one table with same time line
+
+```{r}
+com <- merge(data, JFAMX, by="Date")
+com <- merge(com, EEM, by= "Date")
+com <- merge(com, MOAT, by="Date")
+com <- merge(com, GSPC, by="Date")
+com <- merge(com, IXIC, by="Date")
+com <- merge(com, EAFE, by="Date")
+com <- merge(com, MSCIUSA, by="Date")
+com <- merge(com, ASX200, by="Date")
+com <- merge(com, CAC40, by="Date")
+com <- merge(com, FGIRX, by="Date")
+com <- merge(com, Hang, by="Date")
+com <- merge(com, SP, by="Date")
+com <- merge(com, N225, by="Date")
+com$Date <- as.Date(com$Date, format='%Y-%m-%d')
+write.csv(com, "/Users/jingningyang/Desktop/FIVFX.csv")
+```
+
+# Form a table contains the log return of indices and fund close price 
+
+```{r}
+EEM_r <- diff(log(com$EEM), differences = 1)
+FIVFX_r <- diff(log(com$FIVFX), differences = 1)
+JFAMX_r <- diff(log(com$JFAMX), differences = 1)
+MOAT_r <- diff(log(com$MOAT), differences = 1)
+GSPC_r <- diff(log(com$GSPC), differences = 1)
+IXIC_r <- diff(log(com$IXIC), differences = 1)
+EAFE_r <- diff(log(com$EAFE), differences =  1)
+MSCIUSA_r <- diff(log(com$MSCIUSA), differences = 1)
+ASX200_r <- diff(log(com$ASX200), differences = 1)
+com$CAC40 <- as.numeric(com$CAC40)
+CAC40_r <- diff(log(com$CAC40), differences = 1)
+FGIRX_r <- diff(log(com$FGIRX), differences = 1)
+com$Hang <- as.numeric(com$Hang)
+Hang_r <- diff(log(com$Hang), differences = 1)
+com$SP <- as.numeric(com$SP)
+SP_r <- diff(log(com$SP), differences = 1)
+com$N225 <- as.numeric(com$N225)
+N225_r <- diff(log(com$N225), differences = 1)
+log <- data.frame(cbind(FIVFX_r, EEM_r, MOAT_r, JFAMX_r, GSPC_r, IXIC_r, EAFE_r, MSCIUSA_r, ASX200_r, CAC40_r, FGIRX_r, Hang_r, SP_r, N225_r))
+log <- cbind(com$Date[2:length(com$Date)], log)
+names(log)[1] <- "Date"
+write.csv(log, "/Users/jingningyang/Desktop/log.csv")
+```
+
+# Visulize holding period retrun of funds and indices in same time line
+
+```{r}
+p1 <- ggplot(com)+
+  geom_line(aes(x=Date, y=10000*(FIVFX/com$FIVFX[1]), color = "FIVFX")) +
+  geom_line(aes(x=Date, y=10000*(EEM/com$EEM[1]), color = "EEM"))+
+  geom_line(aes(x=Date, y=10000*(JFAMX/com$JFAMX[1]), color = "JFAMX"))+
+  geom_line(aes(x=Date, y=10000*(MOAT/com$MOAT[1]), color = "MOAT")) +
+  geom_line(aes(x=Date, y=10000*(GSPC/com$GSPC[1]), color = "GSPC")) +
+  geom_line(aes(x=Date, y=10000*(IXIC/com$IXIC[1]), color = "IXIC")) +
+  geom_line(aes(x=Date, y=10000*(EAFE/com$EAFE[1]), color = "EAFE")) +
+  geom_line(aes(x=Date, y=10000*(MSCIUSA/com$MSCIUSA[1]), color = "MSCIUSA")) +
+  geom_line(aes(x=Date, y=10000*(ASX200/com$ASX200[1]), color = "ASX200")) +
+  geom_line(aes(x=Date, y=10000*(CAC40/com$CAC40[1]), color = "CAC40")) +
+  geom_line(aes(x=Date, y=10000*(FGIRX/com$FGIRX[1]), color = "FGIRX")) +
+  geom_line(aes(x=Date, y=10000*(Hang/com$Hang[1]), color = "Hang")) +
+  geom_line(aes(x=Date, y=10000*(SP/com$SP[1]), color = "SP")) +
+  geom_line(aes(x=Date, y=10000*(N225/com$N225[1]), color = "N225")) +
+  labs(title = "Holding period return", x="Time(daily)", y="Holding period return") 
+
+ggplotly(p1)
+```
+
+# Visulize Daily log return of funds
+```{r}
+p2 <- ggplot(log)+
+  geom_line(aes(x=Date, y=log$FIVFX_r)) +
+  geom_line(aes(x=Date, y=log$EEM_r, color = "EEM_r"))+
+  geom_line(aes(x=Date, y=log$JFAMX_r, color = "JFAMX_r"))+
+  geom_line(aes(x=Date, y=log$MOAT_r, color = "MOAT_r")) +
+  geom_line(aes(x=Date, y=log$GSPC_r, color = "GSPC_r")) +
+  geom_line(aes(x=Date, y=log$IXIC_r, color = "IXIC_c")) +
+  geom_line(aes(x=Date, y=log$EAFE_r, color = "EAFE_r")) +
+  geom_line(aes(x=Date, y=log$MSCIUSA_r, color = "MSCIUSA_r")) +
+  geom_line(aes(x=Date, y=log$ASX200_r, color = "ASX200_r")) +
+  geom_line(aes(x=Date, y=log$CAC40_r, color = "CAC40_r")) +
+  geom_line(aes(x=Date, y=log$FGIRX_r, color = "FGIRX_r")) +
+  geom_line(aes(x=Date, y=log$Hang_r, color = "Hang_r")) +
+  geom_line(aes(x=Date, y=log$SP_r, color = "SP_r")) +
+  geom_line(aes(x=Date, y=log$N225_r, color = "N225_r")) +
+  labs(title = "Daily log return in FIVFX and indices", x="Time(daily)", y="Daily log return") 
+
+ggplotly(p2)
+```
+
+Correlation graph:
+```{r}
+
+COR <- cor(com[,-1])
+corrplot::corrplot(COR, type = "upper", order = "hclust", tl.col = "orange", tl.srt = 45)
+pairs(~MSCIUSA + EEM + JFAMX + MOAT + GSPC + IXIC + EAFE + ASX200 + CAC40 + FGIRX + Hang + SP + N225, com)
+car::scatterplotMatrix(~MSCIUSA + EEM + JFAMX + MOAT + GSPC + IXIC + EAFE + ASX200 + CAC40 + FGIRX + Hang + SP + N225, com)
+```
+
+
+# Lasso regression
+
+```{r Lasso Regression}
+pacman::p_load(glmnet)
+library(matlab)
+
+# preparation ----------------------
+## you need to 1st prepare thing to put into the lasso, `composit` & `FIVFX_Lasso`
+composit <- log %>% dplyr::select(-Date,-FIVFX_r,-EAFE_r, -MSCIUSA_r) %>% as.matrix()
+## because lasso also returns a coef for intercept. so you will need to create a column of ones
+## to the left-most column
+One_lasso <- ones(n = nrow(composit),m = 1) #Error in ones(n = nrow(composit), m = 1) : could not find function "ones"
+
+FIVFX_Lasso <- log %>% dplyr::select(FIVFX_r) %>% as.matrix()
+## provide a list lambda for cross validation selection of lambda
+
+# cross validation choosing lambda ----------------
+## cv.glmnet can returns the lambda which gives the least MSE(mean squared error)
+cv_composit <- cv.glmnet(x = composit, y = FIVFX_Lasso)
+plot(cv_composit) ## visually check the plot
+```
+
+```{r}
+lambda <- cv_composit$lambda.min ## store the best lambda
+
+# create lasso composit index ------------------------
+## use lasso coef to generate the lasso composit
+## 1st cronstruct a column vector of lasso_coef
+## 2nd create the featrue matrix to be transformed: lasso_mat
+## simple LA and you get the lasso_composit_index
+lasso_coef <- round(coef(cv_composit,s = lambda)%>%as.matrix(),1)
+## check the coeffients, rounded to 1 decimal bcz it is hard to get exactly zero sometimes
+lasso_coef
+```
+
+```{r}
+lasso_coef_name <- paste(unlist(rownames(lasso_coef)[-1]),collapse = ",")
+lasso_mat <- cbind(One_lasso,composit)
+lasso_composit_index <- lasso_mat %*% lasso_coef
+## '_nr_' means no rounding, this will no doubt give you the best result, 
+## but not really useful because we are looking for a way to reduce indicies
+lasso_coef_nr <- coef(cv_composit,s = lambda)%>%as.matrix()
+lasso_composit_index_nr <- lasso_mat%*%lasso_coef_nr
+```
+
+
+# Fit Benchmark for baseline
+```{r}
+## use benchmarks to get a baseline
+fit.benchmark <- lm(log$FIVFX_r~log$EAFE_r + log$MSCIUSA_r)
+summary(fit.benchmark)
+```
+
+
+# Fit index: JFAMX 
+```{r}
+fit.JFAMX <- lm(log$FIVFX_r~log$JFAMX_r)
+summary(fit.JFAMX)
+#JFAMX_c <- round(md_test(fit.JFAMX,method = "pearson",modelequation = "FIVFX ~ JFAMX")$correlation_test,2)
+#corr.test(log$FIVFX_r,log$JFAMX_r)
+```
+
+# Fit lasso composit
+```{r}
+## fit a Lasso composit just as you will fit a single index
+fit_lasso <- lm(formula = FIVFX_Lasso ~ lasso_composit_index)
+summary(fit_lasso)
+a <- predict(fit_lasso)
+sig <- sd(fit_lasso$residuals)*length(FIVFX_Lasso)/fit_lasso$df.residual
+cr <- c()
+for (i in 1:1000){
+  a_pred <- rnorm(n = length(a),mean = a, sd = sig)
+  cr[i] <- cor(FIVFX_Lasso,a_pred)
+}
+mean(cr)
+a_pred <- rnorm(n = length(a),mean = a, sd = sig)
+cor(FIVFX_Lasso,a_pred)
+```
+
+# Less index
+```{r}
+composit_new <- as.data.frame(composit) %>% dplyr::select(JFAMX_r,GSPC_r,IXIC_r, EEM_r, MOAT_r) %>% as.matrix()
+One_lasso_new <- ones(n=nrow(composit_new),m=1)
+FIVFX_Lasso <- log %>% dplyr::select(FIVFX_r) %>% as.matrix()
+cv_composit_new <- cv.glmnet(x=composit_new,y=FIVFX_Lasso)
+plot(cv_composit_new)
+lambda_new <- cv_composit_new$lambda.min
+lasso_coef_new <- round(coef(cv_composit_new,s=lambda) %>% as.matrix(),1)
+lasso_coef_new
+lasso_coef_new_name <- paste(unlist(rownames(lasso_coef_new)[-1]),collapse = ",")
+lasso_mat_new <- cbind(One_lasso_new,composit_new)
+lasso_composit_new_index <- lasso_mat_new %*% lasso_coef_new
+fit_lasso_new <- lm(formula = FIVFX_Lasso~lasso_composit_new_index)
+summary(fit_lasso_new)
+```
+
+# compare results
+```{r}
+BIC_tab <- BIC(fit.benchmark,fit.JFAMX,fit_lasso,fit_lasso_new)
+BIC_tab
+BIC_improve <-BIC_tab - BIC(fit.benchmark)
+BIC_improve
+```
+since the BIC of fit_lasso_new is smallest, so the ideal choose is fit_lasso_new
+
+# Fit the model with overlap indices
+```{r}
+SnP <- read.csv("https://raw.githubusercontent.com/BU-MSSP/Fidelity-Fall2019/master/index/international_index/SP500.csv?token=ANE46RVKU5EKYOTMVY4SFMK57JU3W")
+SnP$Close <- as.numeric(SnP$Close)
+SnP$Date <- as.Date(SnP$Date,"%Y-%m-%d")
+SnP %<>% select(Date,Close) %>% rename(SnP = Close)
+data1 <- merge(log,SnP,by = "Date")
+SnP_return <- diff(log(data1$SnP), differences=1)
+log <- log %<>% left_join(log, SnP_return = SnP_return)
+# Fit a linear regression model with S&P 500 and NASDAQ
+fit_reduce <- lm(FIVFX_r ~ IXIC_r + SP_r,data = log)
+summary(fit_reduce) # R-squared 0.6827
+
+# Fit a linear regression model with overlap within group
+fit_overlap <- lm(FIVFX_r ~ IXIC_r + SP_r + JFAMX_r + GSPC_r + EEM_r,data = log)
+summary(fit_overlap) # R-squared 0.7962
+```
+
+#############END################
